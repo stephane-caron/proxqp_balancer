@@ -1,4 +1,4 @@
-name: mpc_balancer
+name: proxqp_balancer
 channels:
     - https://conda.anaconda.org/conda-forge
 dependencies:
