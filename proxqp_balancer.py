@@ -15,9 +15,10 @@ from typing import Optional
 import gin
 import gymnasium as gym
 import numpy as np
+from numpy.typing import NDArray
+
 import qpsolvers
 import upkie.envs
-from numpy.typing import NDArray
 from proxsuite import proxqp
 from qpmpc import MPCQP, Plan, solve_mpc
 from qpmpc.systems import WheeledInvertedPendulum
@@ -213,7 +214,7 @@ def balance(
                 prev_output=commanded_velocity,
                 cutoff_period=0.1,
                 new_input=0.0,
-                dt=env.dt,
+                dt=env.unwrapped.dt,
             )
         elif plan.is_empty:
             logging.error("Solver found no solution to the MPC problem")
@@ -225,7 +226,7 @@ def balance(
                 live_plot.update(plan, t, initial_state, t)
             commanded_accel = plan.first_input
             commanded_velocity = clamp_and_warn(
-                commanded_velocity + commanded_accel * env.dt / 2.0,
+                commanded_velocity + commanded_accel * env.unwrapped.dt / 2.0,
                 lower=-1.0,
                 upper=+1.0,
                 label="commanded_velocity",
