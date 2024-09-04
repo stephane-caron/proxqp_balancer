@@ -302,14 +302,17 @@ def balance(
             if step >= nb_env_steps:
                 break
 
-    report(mpc_problem, mpc_qp, planning_times)
+    report(mpc_problem, mpc_qp, base_pitches, planning_times)
     np.save("base_pitches.npy", base_pitches)
     np.save("planning_times.npy", planning_times)
 
 
-def report(mpc_problem, mpc_qp, planning_times: Optional[NDArray[float]]):
-    average_ms = 1e3 * np.average(planning_times)
-    std_ms = 1e3 * np.std(planning_times)
+def report(
+    mpc_problem,
+    mpc_qp,
+    base_pitches: Optional[NDArray[float]],
+    planning_times: Optional[NDArray[float]],
+):
     nb_env_steps = planning_times.size
     print("")
     print(f"{gin.operative_config_str()}")
@@ -323,9 +326,18 @@ def report(mpc_problem, mpc_qp, planning_times: Optional[NDArray[float]]):
     print(f"{mpc_qp.Psi.shape=}")
     print("")
     if planning_times is not None:
+        average_ms = 1e3 * np.average(planning_times)
+        std_ms = 1e3 * np.std(planning_times)
         print(
             "Planning time: "
             f"{average_ms:.2} ± {std_ms:.2} ms over {nb_env_steps} calls"
+        )
+    if base_pitches is not None:
+        average_rad = np.average(base_pitches)
+        std_rad = np.std(base_pitches)
+        print(
+            "Base pitch: "
+            f"{average_rad:.2} ± {std_rad:.2} rad over {nb_env_steps} calls"
         )
         print("")
 
@@ -339,6 +351,7 @@ if __name__ == "__main__":
     args = parse_command_line_arguments()
     with gym.make(
         "UpkieGroundVelocity-v3",
+        disable_env_checker=True,  # faster startup
         frequency=200.0,
         frequency_checks=False,
         wheel_radius=WHEEL_RADIUS,
