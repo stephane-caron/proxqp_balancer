@@ -149,7 +149,11 @@ class QPALMWorkspace:
 @gin.configurable
 def balance(
     env: gym.Env,
+    max_ground_accel: float,
+    mpc_sampling_period: float,
     nb_env_steps: int,
+    nb_mpc_timesteps: int,
+    pendulum_length: float,
     rebuild_qp_every_time: bool,
     show_live_plot: bool,
     stage_input_cost_weight: float,
@@ -171,7 +175,12 @@ def balance(
         terminal_cost_weight: Weight for the terminal cost.
         warm_start: If set, use the warm-starting feature of ProxQP.
     """
-    pendulum = PendularUpkie()
+    pendulum = WheeledInvertedPendulum(
+        length=pendulum_length,
+        max_ground_accel=max_ground_accel,
+        nb_timesteps=nb_mpc_timesteps,
+        sampling_period=mpc_sampling_period,
+    )
     mpc_problem = pendulum.build_mpc_problem(
         terminal_cost_weight=terminal_cost_weight,
         stage_state_cost_weight=stage_state_cost_weight,
