@@ -6,10 +6,10 @@
 
 """Wheel balancing using model predictive control with the ProxQP solver."""
 
+import abc
 import argparse
 import os
 import time
-from collections import namedtuple
 from time import perf_counter
 from typing import Optional
 
@@ -24,7 +24,7 @@ from proxsuite import proxqp
 from qpmpc import MPCQP, Plan, solve_mpc
 from qpmpc.systems import WheeledInvertedPendulum
 from qpsolvers import solve_problem
-from upkie.utils.clamp import clamp_and_warn
+from upkie.utils.clamp import clamp
 from upkie.utils.filters import low_pass_filter
 from upkie.utils.raspi import configure_agent_process, on_raspi
 from upkie.utils.spdlog import logging
@@ -57,13 +57,26 @@ def parse_command_line_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+class Workspace(abc.ABC):
+    @abc.abstractmethod
+    def solve(self, mpc_qp: MPCQP) -> qpsolvers.Solution:
+        """Solve a new QP, using warm-starting if possible.
+
+        Args:
+            mpc_qp: New model-predictive control QP.
+
+        Returns:
+            Results from solver.
+        """
+
+
 @gin.configurable
-class ProxQPWorkspace:
+class ProxQPWorkspace(Workspace):
     def __init__(
         self,
+        mpc_qp: MPCQP,
         eps_abs: float,
         eps_rel: float,
-        mpc_qp: MPCQP,
         update_preconditioner: bool,
         verbose: bool,
     ):
@@ -106,7 +119,7 @@ class ProxQPWorkspace:
 
 
 @gin.configurable
-class QPALMWorkspace:
+class QPALMWorkspace(Workspace):
 
     def __init__(
         self, mpc_qp: MPCQP, eps_abs: float, eps_rel: float, verbose: bool

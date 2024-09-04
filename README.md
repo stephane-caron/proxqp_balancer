@@ -26,3 +26,18 @@ Activate your conda environment and run the agent by:
 ```console
 python proxqp_balancer.py
 ```
+
+## Citation
+
+If you use ProxQP or code from this repository in your works, please cite it as follows:
+
+```bibtex
+@unpublished{bambade2023proxqp,
+    title = {{PROXQP: an Efficient and Versatile Quadratic Programming Solver for Real-Time Robotics Applications and Beyond}},
+    author = {Bambade, Antoine and Schramm, Fabian and Kazdadi, Sarah El and Caron, St{\'e}phane and Taylor, Adrien and Carpentier, Justin},
+    url = {https://inria.hal.science/hal-04198663},
+    note = {working paper or preprint},
+    year = {2023},
+    month = Sep,
+}
+```
