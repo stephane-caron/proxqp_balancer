@@ -333,10 +333,10 @@ def report(
             f"{average_ms:.2} ± {std_ms:.2} ms over {nb_env_steps} calls"
         )
     if base_pitches is not None:
-        average_rad = np.average(base_pitches)
-        std_rad = np.std(base_pitches)
+        average_rad = np.average(np.abs(base_pitches))
+        std_rad = np.std(np.abs(base_pitches))
         print(
-            "Base pitch: "
+            "Base pitch magnitude: "
             f"{average_rad:.2} ± {std_rad:.2} rad over {nb_env_steps} calls"
         )
         print("")
