@@ -10,4 +10,5 @@ dependencies:
     - qpsolvers >= 3.4.0
     - upkie >= 3.4.0
     - pip:
+        - qpalm >= 1.2.1
         - qpmpc >= 3.0.0

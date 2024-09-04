@@ -9,16 +9,17 @@
 import argparse
 import os
 import time
+from collections import namedtuple
 from time import perf_counter
 from typing import Optional
 
 import gin
 import gymnasium as gym
 import numpy as np
-from numpy.typing import NDArray
-
+import qpalm
 import qpsolvers
 import upkie.envs
+from numpy.typing import NDArray
 from proxsuite import proxqp
 from qpmpc import MPCQP, Plan, solve_mpc
 from qpmpc.systems import WheeledInvertedPendulum
@@ -46,6 +47,12 @@ def parse_command_line_arguments() -> argparse.Namespace:
         help="Display a live plot of MPC trajectories",
         action="store_true",
         default=False,
+    )
+    parser.add_argument(
+        "--solver",
+        help="QP solver to use",
+        choices=["proxqp", "qpalm"],
+        default="proxqp",
     )
     return parser.parse_args()
 
@@ -99,20 +106,44 @@ class ProxQPWorkspace:
 
 
 @gin.configurable
-class PendularUpkie(WheeledInvertedPendulum):
+class QPALMWorkspace:
+
     def __init__(
-        self,
-        length: float,
-        max_ground_accel: float,
-        nb_timesteps: int,
-        sampling_period: float,
+        self, mpc_qp: MPCQP, eps_abs: float, eps_rel: float, verbose: bool
     ):
-        super().__init__(
-            length=length,
-            max_ground_accel=max_ground_accel,
-            nb_timesteps=nb_timesteps,
-            sampling_period=sampling_period,
-        )
+        settings = qpalm.Settings()
+        settings.verbose = verbose
+        settings.eps_abs = eps_abs
+        settings.eps_rel = eps_rel
+
+        P, q, G, h, A, b, lb, ub = mpc_qp.unpack()
+        # P, G, A = ensure_sparse_matrices(P, G, A)
+        n: int = q.shape[0]
+        m: int = G.shape[0]
+        data = qpalm.Data(n, m)
+        data.Q = P
+        data.q = q
+        data.A = G
+        data.bmax = h
+        data.bmin = -h
+
+        solver = qpalm.Solver(data, settings)
+        solver.solve()
+        self.solver = solver
+        self.solution = None
+
+    def solve(self, mpc_qp: MPCQP) -> qpsolvers.Solution:
+        self.solver.update_q(mpc_qp.q)
+        if self.solution is not None:
+            self.solver.warm_start(self.solution.x, self.solution.y)
+            self.solution = namedtuple("Solution", ["x", "y"])(x=None, y=None)
+        self.solver.solve()
+        self.solution.x = self.solver.solution.x
+        self.solution.y = self.solver.solution.y
+        qpsol = qpsolvers.Solution(mpc_qp.problem)
+        qpsol.found = self.solver.info.status == "solved"
+        qpsol.x = self.solver.solution.x
+        return qpsol
 
 
 @gin.configurable
