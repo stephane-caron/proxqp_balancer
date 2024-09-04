@@ -229,7 +229,7 @@ def balance(
     while True:
         action[0] = commanded_velocity
         observation, _, terminated, truncated, info = env.step(action)
-        env.log("observation", observation)
+        env.unwrapped.log("observation", observation)
         if terminated or truncated:
             observation, info = env.reset()
             commanded_velocity = 0.0
@@ -290,12 +290,11 @@ def balance(
             if live_plot is not None:
                 t = time.time()
                 live_plot.update(plan, t, initial_state, t)
-            commanded_accel = plan.first_input
-            commanded_velocity = clamp_and_warn(
+            commanded_accel = plan.first_input[0]
+            commanded_velocity = clamp(
                 commanded_velocity + commanded_accel * env.unwrapped.dt / 2.0,
                 lower=-1.0,
                 upper=+1.0,
-                label="commanded_velocity",
             )
 
         if nb_env_steps > 0:
@@ -341,6 +340,7 @@ if __name__ == "__main__":
     with gym.make(
         "UpkieGroundVelocity-v3",
         frequency=200.0,
+        frequency_checks=False,
         wheel_radius=WHEEL_RADIUS,
         spine_config={
             "wheel_odometry": {
