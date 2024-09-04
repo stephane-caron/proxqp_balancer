@@ -122,23 +122,26 @@ class ProxQPWorkspace(Workspace):
 class QPALMWorkspace(Workspace):
 
     def __init__(
-        self, mpc_qp: MPCQP, eps_abs: float, eps_rel: float, verbose: bool
+        self,
+        mpc_qp: MPCQP,
+        eps_abs: float,
+        eps_rel: float,
+        verbose: bool,
     ):
         settings = qpalm.Settings()
         settings.verbose = verbose
         settings.eps_abs = eps_abs
         settings.eps_rel = eps_rel
 
-        P, q, G, h, A, b, lb, ub = mpc_qp.unpack()
         # P, G, A = ensure_sparse_matrices(P, G, A)
-        n: int = q.shape[0]
-        m: int = G.shape[0]
+        n: int = mpc_qp.q.shape[0]
+        m: int = mpc_qp.G.shape[0]
         data = qpalm.Data(n, m)
-        data.Q = P
-        data.q = q
-        data.A = G
-        data.bmax = h
-        data.bmin = -h
+        data.Q = mpc_qp.P
+        data.q = mpc_qp.q
+        data.A = mpc_qp.G
+        data.bmax = mpc_qp.h
+        data.bmin = -mpc_qp.h
 
         solver = qpalm.Solver(data, settings)
         solver.solve()
@@ -148,11 +151,12 @@ class QPALMWorkspace(Workspace):
     def solve(self, mpc_qp: MPCQP) -> qpsolvers.Solution:
         self.solver.update_q(mpc_qp.q)
         if self.solution is not None:
-            self.solver.warm_start(self.solution.x, self.solution.y)
-            self.solution = namedtuple("Solution", ["x", "y"])(x=None, y=None)
+            self.solver.warm_start(self.solution["x"], self.solution["y"])
         self.solver.solve()
-        self.solution.x = self.solver.solution.x
-        self.solution.y = self.solver.solution.y
+        self.solution = {
+            "x": self.solver.solution.x,
+            "y": self.solver.solution.y,
+        }
         qpsol = qpsolvers.Solution(mpc_qp.problem)
         qpsol.found = self.solver.info.status == "solved"
         qpsol.x = self.solver.solution.x
@@ -201,7 +205,11 @@ def balance(
     )
     mpc_problem.initial_state = np.zeros(4)
     mpc_qp = MPCQP(mpc_problem)
-    workspace = ProxQPWorkspace(mpc_qp)
+    workspace: Workspace = (
+        QPALMWorkspace(mpc_qp)
+        if args.solver == "qpalm"
+        else ProxQPWorkspace(mpc_qp)
+    )
 
     live_plot = None
     if show_live_plot and not on_raspi():
