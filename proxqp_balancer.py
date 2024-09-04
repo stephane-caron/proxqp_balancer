@@ -53,7 +53,12 @@ def parse_command_line_arguments() -> argparse.Namespace:
 @gin.configurable
 class ProxQPWorkspace:
     def __init__(
-        self, mpc_qp: MPCQP, update_preconditioner: bool, verbose: bool
+        self,
+        eps_abs: float,
+        eps_rel: float,
+        mpc_qp: MPCQP,
+        update_preconditioner: bool,
+        verbose: bool,
     ):
         n_eq = 0
         n_in = mpc_qp.h.size // 2  # WheeledInvertedPendulum structure
@@ -64,8 +69,8 @@ class ProxQPWorkspace:
             n_in,
             dense_backend=proxqp.dense.DenseBackend.PrimalDualLDLT,
         )
-        solver.settings.eps_abs = 1e-3
-        solver.settings.eps_rel = 0.0
+        solver.settings.eps_abs = eps_abs
+        solver.settings.eps_rel = eps_rel
         solver.settings.verbose = verbose
         solver.settings.compute_timings = True
         solver.settings.primal_infeasibility_solving = True
