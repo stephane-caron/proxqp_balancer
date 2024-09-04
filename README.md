@@ -2,6 +2,8 @@
 
 Model predictive controller used in the real-robot experiments of [PROXQP: an Efficient and Versatile Quadratic Programming Solver for Real-Time Robotics Applications and Beyond](https://inria.hal.science/hal-04198663v2).
 
+This is an archival repository: the code here matches the one used in the experiments of the paper. Check out the [MPC balancer](https://github.com/upkie/mpc_balancer) for future developments, bug fixes and support.
+
 ## Installation
 
 We recommend using Anaconda to install the agent and all dependencies in a clean environment:
@@ -41,3 +43,7 @@ If you use ProxQP or code from this repository in your works, please cite it as 
     month = Sep,
 }
 ```
+
+## See also
+
+- [MPC balancer](https://github.com/upkie/mpc_balancer): where future development on this code will happen.
