@@ -15,6 +15,35 @@ conda activate proxqp_balancer
 
 Alternatively, you should be able to install the packages listed in the environment file from PyPI.
 
+### HPIPM
+
+HPIPM is not packaged, but instructions to install from source are given in [hpipm](https://github.com/giaf/hpipm#python):
+
+- Clone BLASFEO: `git clone https://github.com/giaf/blasfeo.git`
+- From the BLASFEO directory, run: `make shared_library -j 4`
+- Check again that you are in your conda environment, then run:
+
+```console
+cp -f ./lib/libblasfeo.so ${CONDA_PREFIX}/lib/
+cp -f ./include/*.h ${CONDA_PREFIX}/include/
+```
+
+- Clone HPIPM: `git clone https://github.com/giaf/hpipm.git`
+- From the HPIPM directory, run: `make shared_library -j 4`
+- Check again that you are in your conda environment, then run:
+
+```console
+cp -f libhpipm.so ${CONDA_PREFIX}/lib/
+cp -f ./include/*.h ${CONDA_PREFIX}/include/
+```
+
+- Go to `hpipm/interfaces/python/hpipm_python` and run `pip install .`
+- Try to import the package in Python:
+
+```py
+import hpipm_python.common as hpipm
+```
+
 ## Usage
 
 To run in simulation, clone the [upkie](https://github.com/upkie/upkie) repository and run:

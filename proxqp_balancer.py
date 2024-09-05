@@ -353,7 +353,7 @@ if __name__ == "__main__":
         "UpkieGroundVelocity-v3",
         disable_env_checker=True,  # faster startup
         frequency=200.0,
-        frequency_checks=False,
+        frequency_checks=True,
         wheel_radius=WHEEL_RADIUS,
         spine_config={
             "wheel_odometry": {
