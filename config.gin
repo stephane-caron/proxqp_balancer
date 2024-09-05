@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+HPIPMWorkspace.eps_abs = 1e-3
+HPIPMWorkspace.mode = "speed"
+
 ProxQPWorkspace.eps_abs = 1e-3
 ProxQPWorkspace.eps_rel = 0.0
 ProxQPWorkspace.update_preconditioner = True

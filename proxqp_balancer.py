@@ -11,10 +11,11 @@ import argparse
 import os
 import time
 from time import perf_counter
-from typing import Optional
+from typing import Literal, Optional
 
 import gin
 import gymnasium as gym
+import hpipm_python.common as hpipm
 import numpy as np
 import qpalm
 import qpsolvers
@@ -51,7 +52,7 @@ def parse_command_line_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--solver",
         help="QP solver to use",
-        choices=["proxqp", "qpalm"],
+        choices=["hpipm", "proxqp", "qpalm"],
         default="proxqp",
     )
     return parser.parse_args()
@@ -164,6 +165,58 @@ class QPALMWorkspace(Workspace):
 
 
 @gin.configurable
+class HPIPMWorkspace(Workspace):
+
+    def __init__(
+        self,
+        mpc_qp: MPCQP,
+        mode: Literal["speed_abs", "speed", "balance", "robust"],
+        eps_abs: float,
+    ):
+        # setup the problem dimensions
+        nv = mpc_qp.q.shape[0]
+        ne = 0
+        ng = mpc_qp.h.shape[0]
+        nb = 0
+
+        dim = hpipm.hpipm_dense_qp_dim()
+        dim.set("nv", nv)
+        dim.set("nb", nb)
+        dim.set("ne", ne)
+        dim.set("ng", ng)
+
+        # setup the problem data
+        qp = hpipm.hpipm_dense_qp(dim)
+        qp.set("H", mpc_qp.P)
+        qp.set("g", mpc_qp.q)
+        qp.set("C", mpc_qp.G)
+        qp.set("ug", mpc_qp.h)
+        # mask out the lower bound
+        qp.set("lg_mask", np.zeros_like(mpc_qp.h, dtype=bool))
+
+        solver_args = hpipm.hpipm_dense_qp_solver_arg(dim, mode)
+        solver_args.set("tol_ineq", eps_abs)
+        solver_args.set("tol_comp", eps_abs)
+        solver_args.set("tol_stat", eps_abs)
+        solver_args.set("warm_start", 1)
+
+        sol = hpipm.hpipm_dense_qp_sol(dim)
+        solver = hpipm.hpipm_dense_qp_solver(dim, solver_args)
+        self.qp = qp
+        self.sol = sol
+        self.solver = solver
+
+    def solve(self, mpc_qp: MPCQP) -> qpsolvers.Solution:
+        self.qp.set("g", mpc_qp.q)
+        self.solver.solve(self.qp, self.sol)
+        status = self.solver.get("status")
+        qpsol = qpsolvers.Solution(mpc_qp.problem)
+        qpsol.found = status == 0
+        qpsol.x = self.sol.get("v").flatten()
+        return qpsol
+
+
+@gin.configurable
 def balance(
     env: gym.Env,
     max_ground_accel: float,
@@ -208,7 +261,11 @@ def balance(
     workspace: Workspace = (
         QPALMWorkspace(mpc_qp)
         if args.solver == "qpalm"
-        else ProxQPWorkspace(mpc_qp)
+        else (
+            HPIPMWorkspace(mpc_qp)
+            if args.solver == "hpipm"
+            else ProxQPWorkspace(mpc_qp)
+        )
     )
 
     live_plot = None
