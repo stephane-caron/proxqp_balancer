@@ -53,7 +53,7 @@ def parse_command_line_arguments() -> argparse.Namespace:
         "--solver",
         help="QP solver to use",
         choices=["hpipm", "proxqp", "qpalm"],
-        default="proxqp",
+        required=True,
     )
     return parser.parse_args()
 
@@ -198,7 +198,7 @@ class HPIPMWorkspace(Workspace):
         solver_args.set("tol_ineq", eps_abs)
         solver_args.set("tol_comp", eps_abs)
         solver_args.set("tol_stat", eps_abs)
-        solver_args.set("warm_start", 1)
+        solver_args.set("warm_start", 2)
 
         sol = hpipm.hpipm_dense_qp_sol(dim)
         solver = hpipm.hpipm_dense_qp_solver(dim, solver_args)
