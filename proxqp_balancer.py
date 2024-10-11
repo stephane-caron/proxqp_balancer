@@ -15,20 +15,32 @@ from typing import Literal, Optional
 
 import gin
 import gymnasium as gym
-import hpipm_python.common as hpipm
 import numpy as np
-import qpalm
 import qpsolvers
 import upkie.envs
 from numpy.typing import NDArray
-from proxsuite import proxqp
 from qpmpc import MPCQP, Plan, solve_mpc
 from qpmpc.systems import WheeledInvertedPendulum
 from qpsolvers import solve_problem
-from upkie.utils.clamp import clamp
+from upkie.utils.clamp import clamp_and_warn
 from upkie.utils.filters import low_pass_filter
 from upkie.utils.raspi import configure_agent_process, on_raspi
 from upkie.utils.spdlog import logging
+
+try:
+    from proxsuite import proxqp
+except ImportError:
+    proxqp = None
+
+try:
+    import qpalm
+except ImportError:
+    qpalm = None
+
+try:
+    import hpipm_python.common as hpipm
+except ImportError:
+    hpipm = None
 
 upkie.envs.register()
 
@@ -52,7 +64,9 @@ def parse_command_line_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--solver",
         help="QP solver to use",
-        choices=["hpipm", "proxqp", "qpalm"],
+        choices=(["proxqp"] if proxqp is not None else [])
+        + (["hpipm"] if hpipm is not None else [])
+        + (["qpalm"] if qpalm is not None else []),
         required=True,
     )
     return parser.parse_args()

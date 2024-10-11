@@ -1,4 +1,5 @@
 *.npy
 __pycache__
 bazel-*
+conda_env.tar.gz
 tools/bazel
