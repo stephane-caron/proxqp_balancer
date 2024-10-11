@@ -332,12 +332,14 @@ def balance(
 
         t0 = perf_counter()
         if rebuild_qp_every_time:
+            assert args.solver == "proxqp", "Only testing this for ProxQP"
             plan = solve_mpc(mpc_problem, solver="proxqp")
         else:
             mpc_qp.update_cost_vector(mpc_problem)
             if warm_start:
                 qpsol = workspace.solve(mpc_qp)
             else:
+                assert args.solver == "proxqp", "Only testing this for ProxQP"
                 qpsol = solve_problem(mpc_qp.problem, solver="proxqp")
             if not qpsol.found:
                 logging.warn("No solution found to the MPC problem")
@@ -362,10 +364,11 @@ def balance(
                 t = time.time()
                 live_plot.update(plan, t, initial_state, t)
             commanded_accel = plan.first_input[0]
-            commanded_velocity = clamp(
+            commanded_velocity = clamp_and_warn(
                 commanded_velocity + commanded_accel * env.unwrapped.dt / 2.0,
                 lower=-1.0,
                 upper=+1.0,
+                label="commanded_velocity",
             )
 
         if nb_env_steps > 0:
